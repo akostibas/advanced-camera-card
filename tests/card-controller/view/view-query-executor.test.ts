@@ -594,6 +594,11 @@ describe('ViewQueryExecutor', () => {
         // Timeline view should query all cameras, not just the current camera.
         const allCameraIDs = view.query?.getAllCameraIDs();
         expect(allCameraIDs?.size).toBeGreaterThan(1);
+
+        // Capped like other views, so day-walking engines don't read all history.
+        for (const query of view.query?.getMediaQueries() ?? []) {
+          expect(query.limit).toBe(50);
+        }
       });
     });
 

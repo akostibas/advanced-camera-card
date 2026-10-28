@@ -140,8 +140,13 @@ export class ViewQueryExecutor {
         }
         break;
       case 'timeline':
-        // Timeline view always queries all cameras with media capabilities.
-        viewModifiers.push(...(await executeQuery(builder.buildDefaultCameraQuery())));
+        // Timeline view always queries all cameras with media capabilities. Capped
+        // like other views: engines that walk day by day (Reolink) read all history otherwise.
+        viewModifiers.push(
+          ...(await executeQuery(
+            builder.buildDefaultCameraQuery(undefined, { limit: this._getLimit() }),
+          )),
+        );
         break;
       case 'gallery':
       case 'media':
