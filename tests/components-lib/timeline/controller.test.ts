@@ -4,6 +4,7 @@ import type { TimelineEventPropertiesResult, TimelineWindow } from 'vis-timeline
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
+import type { CameraManager } from '../../../src/camera-manager/manager';
 import type { FoldersManager } from '../../../src/card-controller/folders/manager';
 import type {
   ViewManagerEpoch,
@@ -65,6 +66,7 @@ interface TestHarness {
   controller: TimelineController;
   timeline: ExtendedTimeline;
   manager: ViewManagerInterface;
+  cameraManager: CameraManager;
   trigger: (event: string, ...args: unknown[]) => void;
 }
 
@@ -73,6 +75,7 @@ const createHarness = async (options?: {
   media?: ViewMedia[];
   mini?: boolean;
   style?: 'ribbon' | 'stack';
+  limit?: number;
 }): Promise<TestHarness> => {
   stubMatchMedia().mockReturnValue({ matches: true });
 
@@ -103,7 +106,7 @@ const createHarness = async (options?: {
   vi.mocked(cameraManager.executeMediaQueries).mockResolvedValue([]);
 
   const query = new UnifiedQuery();
-  query.addNode(createReviewQuery(CAMERA_ID));
+  query.addNode(createReviewQuery(CAMERA_ID, { limit: options?.limit }));
 
   const controller = new TimelineController(new TimelineControllerTestHost());
   controller.setHass(createHASS());
@@ -135,6 +138,7 @@ const createHarness = async (options?: {
     controller: controller,
     timeline: timeline,
     manager: manager,
+    cameraManager: cameraManager,
     trigger: (event: string, ...args: unknown[]): void => {
       handlers.get(event)?.(...args);
     },
@@ -190,6 +194,19 @@ describe('TimelineController', () => {
     const options = timelineConstructor.mock.calls[0]?.at(-1);
 
     expect(options).toEqual(expect.objectContaining({ dataAttributes: ['severity'] }));
+  });
+
+  it('should not cap windowed queries at the view limit', async () => {
+    const harness = await createHarness({ limit: 50 });
+
+    // The limit pages the view's startup query; a window must load everything in range.
+    const queries = vi
+      .mocked(harness.cameraManager.executeMediaQueries)
+      .mock.calls.flatMap((call) => call[0]);
+    expect(queries.length).toBeGreaterThan(0);
+    for (const query of queries) {
+      expect(query.limit).toBeUndefined();
+    }
   });
 
   describe('should decide what can be clustered', () => {

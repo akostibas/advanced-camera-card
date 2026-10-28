@@ -1,6 +1,6 @@
 import { add, differenceInSeconds, sub } from 'date-fns';
 import type { LitElement } from 'lit';
-import { isEqual, throttle } from 'lodash-es';
+import { isEqual, omit, throttle } from 'lodash-es';
 import type { ViewContext } from 'view';
 import {
   Timeline,
@@ -30,6 +30,7 @@ import type {
 } from '../../config/schema/common/controls/timeline';
 import { configDefaults } from '../../config/schema/types';
 import type { HomeAssistant } from '../../ha/types';
+import { QuerySource } from '../../query-source';
 import { stopEventFromActivatingCardWideActions } from '../../utils/action';
 import { formatDateAndTime, isHoverableDevice, isTruthy } from '../../utils/basic';
 import { findBestMediaTimeIndex } from '../../utils/find-best-media-time-index';
@@ -37,7 +38,7 @@ import { fireAdvancedCameraCardEvent } from '../../utils/fire-advanced-camera-ca
 import type { ViewMedia } from '../../view/item';
 import { ViewItemClassifier } from '../../view/item-classifier';
 import { QueryResults } from '../../view/query-results';
-import type { UnifiedQuery } from '../../view/unified-query';
+import { UnifiedQuery } from '../../view/unified-query';
 import { UnifiedQueryTransformer } from '../../view/unified-query-transformer';
 import { mergeViewContext } from '../../view/view';
 import {
@@ -138,7 +139,15 @@ export class TimelineController {
    * Shape determines timeline structure (groups).
    */
   private _getQueryShape(query: UnifiedQuery): UnifiedQuery {
-    return UnifiedQueryTransformer.stripTimeRange(query);
+    // The limit too: it caps the view's startup query, but a window must show everything
+    // in range, or busy cameras lose the start of each day.
+    return new UnifiedQuery(
+      UnifiedQueryTransformer.stripTimeRange(query)
+        .getNodes()
+        .map((node) =>
+          node.source === QuerySource.Camera ? omit(node, 'limit') : node,
+        ),
+    );
   }
 
   private _hasSameShape(a?: UnifiedQuery | null, b?: UnifiedQuery | null): boolean {
