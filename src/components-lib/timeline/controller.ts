@@ -2,6 +2,7 @@ import { add, differenceInSeconds, sub } from 'date-fns';
 import type { LitElement } from 'lit';
 import { isEqual, omit, throttle } from 'lodash-es';
 import type { ViewContext } from 'view';
+import { DataView } from 'vis-data';
 import {
   Timeline,
   type IdType,
@@ -51,6 +52,7 @@ import type {
   TimelineItemClickAction,
   TimelineRangeChange,
 } from './types';
+import { matchesWhatFilter, whatFilter } from './what-filter';
 
 // An event used to fetch data required for thumbnail rendering. See special
 // note below on why this is necessary.
@@ -85,6 +87,7 @@ export class TimelineController {
   private _timelineElement: HTMLElement | null = null;
 
   private _source: TimelineDataSource | null = null;
+  private _filteredItems: DataView<AdvancedCameraCardTimelineItem> | null = null;
   private _timeline: ExtendedTimeline | null = null;
 
   private _hass: HomeAssistant | null = null;
@@ -264,6 +267,11 @@ export class TimelineController {
     this._host.requestUpdate();
   }
 
+  public refreshWhatFilter(): void {
+    this._filteredItems?.refresh();
+    this._host.requestUpdate();
+  }
+
   public setTimelineDate(date: Date): void {
     this._timeline?.moveTo(date);
   }
@@ -292,20 +300,19 @@ export class TimelineController {
     if (!options) {
       return false;
     }
+    this._filteredItems = new DataView(this._source.dataset, {
+      filter: (item) => matchesWhatFilter(item.media),
+    });
 
     if (this._shouldShowGroups()) {
       this._timeline = new Timeline(
         this._timelineElement,
-        this._source.dataset,
+        this._filteredItems,
         this._source.groups,
         options,
       );
     } else {
-      this._timeline = new Timeline(
-        this._timelineElement,
-        this._source.dataset,
-        options,
-      );
+      this._timeline = new Timeline(this._timelineElement, this._filteredItems, options);
     }
 
     this._timeline.on('rangechanged', this._timelineRangeChangedHandler.bind(this));
@@ -562,9 +569,14 @@ export class TimelineController {
         main: true,
         ...(cameraID && view.isGrid() && { cameraID: cameraID }),
       };
-      const newResults = view.queryResults
-        ?.clone()
-        .resetSelectedResult()
+      // A filter narrows next/previous to the clips it shows.
+      const results = whatFilter.size
+        ? new QueryResults({
+            results: view.queryResults?.getResults()?.filter(matchesWhatFilter) ?? [],
+          })
+        : view.queryResults?.clone();
+      const newResults = results
+        ?.resetSelectedResult()
         .selectResultIfFound((media) => media.getID() === id, criteria);
       const selectedItem = newResults?.getSelectedResult();
       const context: ViewContext = mergeViewContext(this._getTimelineContext(), {
@@ -629,7 +641,8 @@ export class TimelineController {
         filter: (timelineItem) => !!timelineItem.query && query === timelineItem.query,
       })
       .map((timelineItem) => timelineItem.media)
-      .filter(isTruthy);
+      .filter(isTruthy)
+      .filter(matchesWhatFilter);
     const selectedIndex = media.findIndex((m) => m.getID() === item.id);
     return selectedIndex >= 0
       ? new QueryResults({ results: media, selectedIndex })

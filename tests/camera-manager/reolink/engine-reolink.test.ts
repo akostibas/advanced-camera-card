@@ -489,7 +489,8 @@ describe('ReolinkCameraManagerEngine', () => {
         { useCache: false },
       );
 
-      expect([...events!.values()][0].browseMedia[0]._metadata).toEqual({
+      const results = [...events!.values()][0] as ReolinkEventQueryResults;
+      expect(results.browseMedia[0]._metadata).toEqual({
         cameraID: 'office',
         startDate: new Date(2024, 10, 3, 23, 59, 49),
         endDate: new Date(2024, 10, 4, 0, 0, 1),

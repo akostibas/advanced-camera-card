@@ -20,6 +20,7 @@ import {
   type ThumbnailDataRequest,
   type TimelineItemClickAction,
 } from '../components-lib/timeline/types';
+import { WHAT_CATEGORIES, whatFilter } from '../components-lib/timeline/what-filter';
 import type { ConditionStateManagerReadonlyInterface } from '../condition-trigger/conditions/types';
 import type { ThumbnailsControlBaseConfig } from '../config/schema/common/controls/thumbnails';
 import type { TimelineCoreComponentConfig } from '../config/schema/common/controls/timeline';
@@ -204,6 +205,23 @@ export class AdvancedCameraCardTimelineCore extends LitElement {
       ${ref(this._refTimeline)}
     >
       <div class="timeline-tools">
+        ${WHAT_CATEGORIES.map(
+          (category) =>
+            html`<label class="what-filter">
+              <input
+                type="checkbox"
+                .checked=${whatFilter.has(category)}
+                @change=${(ev: Event) => {
+                  if ((ev.target as HTMLInputElement).checked) {
+                    whatFilter.add(category);
+                  } else {
+                    whatFilter.delete(category);
+                  }
+                  this._controller.refreshWhatFilter();
+                }}
+              />${localize(`config.common.controls.timeline.what_filter.${category}`)}
+            </label>`,
+        )}
         ${this._controller.shouldSupportSeeking()
           ? html` <advanced-camera-card-icon
               .icon=${{ icon: panIcon }}

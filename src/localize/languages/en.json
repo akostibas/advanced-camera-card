@@ -321,6 +321,12 @@
             "seek": "Pan seeks across all media",
             "seek-in-camera": "Pan seeks within selected camera only",
             "seek-in-media": "Pan seeks within selected media item only"
+          },
+          "what_filter": {
+            "animal": "Animals",
+            "other": "Other",
+            "person": "People",
+            "vehicle": "Vehicles"
           }
         },
         "wheel": "Scroll wheel scrolls media carousel"
