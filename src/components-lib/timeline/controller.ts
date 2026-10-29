@@ -1031,6 +1031,9 @@ export class TimelineController {
       zoomMax: 1 * 24 * 60 * 60 * 1000,
       zoomMin: 1 * 1000,
       margin: {
+        // vis-timeline grows the row nearest the axis by the axis margin when it
+        // has items; a ribbon row only stays a fixed height below ~16px.
+        ...(this._timelineConfig.style === 'ribbon' && { axis: 14 }),
         item: {
           // In ribbon mode, a 20px item is reduced to 6px, so need to add a
           // 14px margin to ensure items line up with subgroups.
