@@ -33,7 +33,7 @@ import { contentsChanged } from '../../utils/basic.js';
 import type { CarouselSelected } from '../../utils/embla/carousel-controller.js';
 import { getTextDirection } from '../../utils/text-direction.js';
 import { ViewItemClassifier } from '../../view/item-classifier.js';
-import type { ViewMedia } from '../../view/item.js';
+import type { ViewItem, ViewMedia } from '../../view/item.js';
 
 import '../carousel';
 import '../next-prev-control.js';
@@ -96,6 +96,8 @@ export class AdvancedCameraCardViewerCarousel extends LitElement {
   private _selected: number | null = null;
 
   private _media: ViewMedia[] | null = null;
+  private _mediaSource: ViewItem[] | null = null;
+  private _selectedSource?: ViewItem | null;
   private _mediaActionsController = new MediaActionsController();
   private _mediaHeightController = new MediaHeightController(this, '.embla__slide');
   private _refCarousel: Ref<HTMLElement> = createRef();
@@ -252,37 +254,38 @@ export class AdvancedCameraCardViewerCarousel extends LitElement {
         this.toggleAttribute('unseekable', false);
       }
 
-      const oldView = this.viewManagerEpoch?.oldView;
-      const oldItems =
-        oldView?.queryResults?.getResults(this.viewFilterCameraID) ?? null;
+      // Compare with what's on show, not the epoch's oldView: several views can
+      // land between updates (e.g. a background re-query, then a click).
       const newItems =
         newView?.queryResults?.getResults(this.viewFilterCameraID) ?? null;
       let resetMedia = false;
-      if (!this._media || oldItems !== newItems) {
+      if (!this._media || this._mediaSource !== newItems) {
+        this._mediaSource = newItems;
         this._media =
           newItems?.filter((item) => ViewItemClassifier.isMedia(item)) ?? null;
         resetMedia = true;
       }
 
-      const oldSelectedItem = oldView?.queryResults?.getSelectedResult(
-        this.viewFilterCameraID,
-      );
       const newSelectedItem = newView?.queryResults?.getSelectedResult(
         this.viewFilterCameraID,
       );
 
       // _selected is an index, it needs to be updated if either the selected
       // item or the media changes.
-      if (oldSelectedItem !== newSelectedItem || resetMedia) {
+      if (this._selectedSource !== newSelectedItem || resetMedia) {
+        this._selectedSource = newSelectedItem;
         const newSelected =
-          this._media?.findIndex((item) => item === newSelectedItem) ?? null;
+          this._media?.findIndex((item) => item === newSelectedItem) ?? -1;
 
         // If there's no selected item, just choose the last (most recent one) to
         // avoid rendering a blank. This could happen if the selected item was a
         // folder.
         this._selected =
-          newSelected ??
-          (this._media && this._media.length ? this._media.length - 1 : null);
+          newSelected >= 0
+            ? newSelected
+            : this._media && this._media.length
+              ? this._media.length - 1
+              : null;
       }
     }
   }
