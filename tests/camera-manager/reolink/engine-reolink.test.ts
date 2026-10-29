@@ -456,6 +456,46 @@ describe('ReolinkCameraManagerEngine', () => {
       );
     });
 
+    it('should date NVR clips from their id, not the day folder', async () => {
+      const engine = createPopulatedEngine();
+      const store = await createStoreWithReolinkCamera(engine);
+
+      // Listed under 2024/11/4, but started the evening before.
+      vi.mocked(homeAssistantWSRequest)
+        .mockResolvedValueOnce(TEST_CAMERAS)
+        .mockResolvedValueOnce(TEST_DIRECTORIES)
+        .mockResolvedValueOnce({
+          ...TEST_FILES,
+          children: [
+            {
+              ...TEST_FILES.children![0],
+              title: '23:59:49 0:00:12',
+              media_content_id:
+                'media-source://reolink/FILE|01J8XHYTNH77WE3C654K03KX1F|0|sub|1-0-0-x|20241103235949|20241104000001',
+            },
+          ],
+        });
+
+      const events = await engine.getEvents(
+        createHASS(),
+        store,
+        {
+          source: QuerySource.Camera,
+          type: QueryType.Event,
+          cameraIDs: new Set(['office']),
+          start: new Date('2024-11-03T23:00:00'),
+          end: new Date('2024-11-04T01:00:00'),
+        },
+        { useCache: false },
+      );
+
+      expect([...events!.values()][0].browseMedia[0]._metadata).toEqual({
+        cameraID: 'office',
+        startDate: new Date(2024, 10, 3, 23, 59, 49),
+        endDate: new Date(2024, 10, 4, 0, 0, 1),
+      });
+    });
+
     it('should cache event requests', async () => {
       const engine = createPopulatedEngine();
       const store = await createStoreWithReolinkCamera(engine);

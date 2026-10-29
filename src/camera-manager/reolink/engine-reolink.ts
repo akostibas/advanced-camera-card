@@ -103,7 +103,12 @@ export class ReolinkCameraManagerEngine extends BrowseMediaCameraManagerEngine {
     //  - "21:47:03 0:00:44 Vehicle Person" (https://github.com/dermotduffy/advanced-camera-card/issues/1870)
     const parts = media.title.split(/ +/);
 
-    const startDate = parse(parts[0], 'HH:mm:ss', parent._metadata.startDate);
+    // NVR ids end "|<start>|<end>" in camera-local time. Prefer it: a clip that
+    // crosses midnight is also listed under the next day's folder.
+    const idStart = media.media_content_id.match(/\|(\d{14})\|\d{14}$/)?.[1];
+    const startDate = idStart
+      ? parse(idStart, 'yyyyMMddHHmmss', new Date())
+      : parse(parts[0], 'HH:mm:ss', parent._metadata.startDate);
     if (!isValidDate(startDate)) {
       return null;
     }
