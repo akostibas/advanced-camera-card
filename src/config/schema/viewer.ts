@@ -24,6 +24,7 @@ export const viewerConfigDefault = {
   auto_mute: [...MEDIA_ACTION_NEGATIVE_CONDITIONS],
   auto_unmute: [],
   lazy_load: true,
+  lazy_unload: [],
   draggable: true,
   zoomable: true,
   transition_effect: 'slide' as const,
@@ -82,6 +83,10 @@ export const viewerConfigSchema = z
       .array()
       .default(viewerConfigDefault.auto_unmute),
     lazy_load: z.boolean().default(viewerConfigDefault.lazy_load),
+    lazy_unload: z
+      .enum(MEDIA_ACTION_NEGATIVE_CONDITIONS)
+      .array()
+      .default(viewerConfigDefault.lazy_unload),
     draggable: z.boolean().default(viewerConfigDefault.draggable),
     zoomable: z.boolean().default(viewerConfigDefault.zoomable),
     transition_effect: transitionEffectConfigSchema.default(

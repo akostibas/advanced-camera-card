@@ -74,6 +74,12 @@ export const getMediaViewerSectionForms = (): EditorForm[] => [
         { name: 'zoomable', selector: { boolean: {} } },
       ]),
       { name: 'lazy_load', selector: { boolean: {} } },
+      {
+        name: 'lazy_unload',
+        selector: createSelectSelector(getMediaActionNegativeOptions(), {
+          multiple: true,
+        }),
+      },
       getTransitionEffectSchema(),
       { name: 'snapshot_click_plays_clip', selector: { boolean: {} } },
       getDisplaySchema(),

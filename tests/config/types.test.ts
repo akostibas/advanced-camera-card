@@ -224,6 +224,7 @@ describe('config defaults', () => {
         },
         draggable: true,
         lazy_load: true,
+        lazy_unload: [],
         snapshot_click_plays_clip: true,
         transition_effect: 'slide',
         zoomable: true,
