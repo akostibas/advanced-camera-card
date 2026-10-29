@@ -157,7 +157,8 @@ export class AdvancedCameraCardTimelineCore extends LitElement {
     }
 
     const view = this.viewManagerEpoch?.manager.getView();
-    const isLoading = !!view?.context?.loading?.query;
+    // Results still on show (e.g. while a scroll re-queries) aren't worth blanking for.
+    const isLoading = !!view?.context?.loading?.query && !view.queryResults;
 
     if (isLoading) {
       if (!this.mini) {

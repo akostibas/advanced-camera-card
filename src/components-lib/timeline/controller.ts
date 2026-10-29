@@ -711,6 +711,8 @@ export class TimelineController {
     await this._viewManagerEpoch?.manager.setViewByParametersWithExistingQuery({
       params: {
         query,
+        // Keep showing (and playing) the current results while the wider query runs.
+        queryResults: view.queryResults,
       },
       queryExecutorOptions: {
         selectResult: {
