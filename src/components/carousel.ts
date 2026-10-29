@@ -49,7 +49,6 @@ export class AdvancedCameraCardCarousel extends LitElement {
   private _carousel: CarouselController | null = null;
 
   // Track slide count to distinguish user-navigation from content changes.
-  private _previousSlideCount: number | null = null;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -100,8 +99,6 @@ export class AdvancedCameraCardCarousel extends LitElement {
   }
 
   protected updated(changedProps: PropertyValues): void {
-    const currentSlideCount = this._refParent.value?.assignedElements().length ?? 0;
-
     if (
       !this._carousel &&
       this._refRoot.value &&
@@ -129,21 +126,10 @@ export class AdvancedCameraCardCarousel extends LitElement {
           wheelScrolling: this.wheelScrolling,
         },
       );
-      this._previousSlideCount = currentSlideCount;
     } else if (changedProps.has('selected') && this._carousel) {
-      // Only scroll to selection if the slide count hasn't changed.
-      // This distinguishes between:
-      // - Navigation (next/prev): count same → scroll to selection
-      // - Content change (item removed): count changed → preserve position
-      const contentChanged =
-        this._previousSlideCount !== null &&
-        this._previousSlideCount !== currentSlideCount;
-
-      if (!contentChanged && this.selected !== this._carousel.getSelectedIndex()) {
-        this._carousel.selectSlide(this.selected);
-      }
+      // When the slides are changing too, the controller applies this once they have.
+      this._carousel.selectSlide(this.selected);
     }
-    this._previousSlideCount = currentSlideCount;
   }
 
   static get styles(): CSSResultGroup {

@@ -39,6 +39,11 @@ export class CarouselController {
   private _plugins: EmblaCarouselPlugins;
   private _carousel: EmblaCarouselType;
 
+  // The slide the owner asked for. Embla's reInit falls back to startIndex, so
+  // it's re-applied after every slide change.
+  private _wantedIndex: number;
+  private _refreshing = false;
+
   private _mutationObserver = new MutationObserver(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (_mutations: MutationRecord[], _observer: MutationObserver) =>
@@ -65,6 +70,7 @@ export class CarouselController {
     this._direction = options?.direction ?? 'horizontal';
     this._transitionEffect = options?.transitionEffect ?? 'slide';
     this._startIndex = options?.startIndex ?? 0;
+    this._wantedIndex = this._startIndex;
     this._dragFree = options?.dragFree ?? false;
     this._loop = options?.loop ?? false;
     this._draggable = options?.dragEnabled ?? true;
@@ -103,7 +109,14 @@ export class CarouselController {
   }
 
   public selectSlide(index: number): void {
-    if (index < 0 || index >= this._carousel.slideNodes().length) {
+    this._wantedIndex = index;
+    const slides = this._carousel.slideNodes();
+    if (
+      index < 0 ||
+      index >= slides.length ||
+      // Slides are about to change: the refresh will jump to the wanted index.
+      !isEqual(slides, getChildrenFromElement(this._parent))
+    ) {
       return;
     }
     this._carousel.scrollTo(index, this._transitionEffect === 'none');
@@ -120,7 +133,15 @@ export class CarouselController {
     const slides = getChildrenFromElement(this._parent);
     const slidesChanged = !isEqual(this._carousel.slideNodes(), slides);
     if (slidesChanged) {
+      this._refreshing = true;
       this._carousel.reInit({ slides });
+      if (
+        this._wantedIndex < slides.length &&
+        this._carousel.selectedScrollSnap() !== this._wantedIndex
+      ) {
+        this._carousel.scrollTo(this._wantedIndex, true);
+      }
+      this._refreshing = false;
     }
   };
 
@@ -188,7 +209,8 @@ export class CarouselController {
       }
     };
 
-    carousel.on('select', () => selectSlide());
+    // A refresh's interim selection (startIndex) isn't the user's choice.
+    carousel.on('select', () => !this._refreshing && selectSlide());
     return carousel;
   }
 }

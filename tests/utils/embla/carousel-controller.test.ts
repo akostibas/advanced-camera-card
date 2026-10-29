@@ -120,10 +120,40 @@ describe('CarouselController', () => {
     const parent = createParent({ children: children });
 
     const carousel = new CarouselController(createRoot(), parent);
+    getEmblaApi()?.slideNodes.mockReturnValue(children);
 
     carousel.selectSlide(4);
 
     expect(getEmblaApi()?.scrollTo).toHaveBeenCalledWith(4, false);
+  });
+
+  it('should select a slide asked for while slides change once they have', () => {
+    const children = createTestSlideNodes();
+    const parent = createParent({ children: children });
+    const carousel = new CarouselController(createRoot(), parent);
+    const selectHandler = vi.fn();
+    parent.addEventListener('advanced-camera-card:carousel:select', selectHandler);
+
+    const emblaApi = getEmblaApi();
+    emblaApi?.slideNodes.mockReturnValue(children);
+    const newChild = document.createElement('div');
+    parent.appendChild(newChild);
+
+    // Embla still has the old slides: scrolling now would pick the wrong one.
+    carousel.selectSlide(10);
+    expect(emblaApi?.scrollTo).not.toHaveBeenCalled();
+
+    // Embla's reInit falls back to startIndex, firing select for it.
+    emblaApi?.reInit.mockImplementation(() => {
+      emblaApi?.slideNodes.mockReturnValue([...children, newChild]);
+      emblaApi?.selectedScrollSnap.mockReturnValue(0);
+      callEmblaHandler(emblaApi, 'select');
+      return undefined as never;
+    });
+    callMutationHandler();
+
+    expect(emblaApi?.scrollTo).toHaveBeenCalledWith(10, true);
+    expect(selectHandler).not.toHaveBeenCalled();
   });
 
   it('should not select non-existent slide', () => {
@@ -131,6 +161,7 @@ describe('CarouselController', () => {
     const parent = createParent({ children: children });
 
     const carousel = new CarouselController(createRoot(), parent);
+    getEmblaApi()?.slideNodes.mockReturnValue(children);
 
     carousel.selectSlide(11);
 
