@@ -278,4 +278,20 @@ describe('AdvancedCameraCardViewerCarousel', () => {
       carousel.getBoundingClientRect().height,
     );
   });
+
+  it('should keep a fixed shape when an aspect ratio is configured', async () => {
+    const card = await mountViewer(EVENTS, {
+      config: { media_viewer: { aspect_ratio: [16, 9], max_height: '100px' } },
+    });
+
+    const carousel = deepQuery<HTMLElement>(
+      card.card,
+      'advanced-camera-card-viewer-carousel',
+    );
+    assert(carousel);
+
+    // The cap wins over the ratio; the media letterboxes inside it.
+    expect(carousel.style.aspectRatio).toBe('16 / 9');
+    expect(carousel.getBoundingClientRect().height).toBeCloseTo(100, 0);
+  });
 });

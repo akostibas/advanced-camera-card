@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { actionsSchema } from './actions/types';
+import { aspectRatioSchema } from './common/aspect-ratio';
 import { nextPreviousControlConfigSchema } from './common/controls/next-previous';
 import { ptzControlsConfigSchema, ptzControlsDefaults } from './common/controls/ptz';
 import {
@@ -82,6 +83,10 @@ export const viewerConfigSchema = z
       .array()
       .default(viewerConfigDefault.auto_unmute),
     lazy_load: z.boolean().default(viewerConfigDefault.lazy_load),
+    // Fixes the viewer's shape instead of resizing it to each media item.
+    aspect_ratio: aspectRatioSchema.optional(),
+    // CSS height cap for a fixed-shape viewer; past it the media letterboxes.
+    max_height: z.string().optional(),
     draggable: z.boolean().default(viewerConfigDefault.draggable),
     zoomable: z.boolean().default(viewerConfigDefault.zoomable),
     transition_effect: transitionEffectConfigSchema.default(

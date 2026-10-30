@@ -228,6 +228,11 @@ export class AdvancedCameraCardViewerCarousel extends LitElement {
 
   protected willUpdate(changedProps: PropertyValues): void {
     if (changedProps.has('viewerConfig')) {
+      const ratio = this.viewerConfig?.aspect_ratio;
+      this.style.aspectRatio = ratio ? `${ratio[0]} / ${ratio[1]}` : '';
+      if (ratio) {
+        this.style.maxHeight = this.viewerConfig?.max_height ?? '';
+      }
       this._mediaActionsController.setOptions({
         playerSelector: ADVANCED_CAMERA_CARD_VIEWER_PROVIDER,
         ...(this.viewerConfig?.auto_play && {

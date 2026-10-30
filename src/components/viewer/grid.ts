@@ -64,7 +64,7 @@ export class AdvancedCameraCardViewerGrid extends LitElement {
         .hass=${this.hass}
         .viewManagerEpoch=${this.viewManagerEpoch}
         .viewFilterCameraID=${filterCamera}
-        .autoHeight=${!filterCamera}
+        .autoHeight=${!filterCamera && !this.viewerConfig?.aspect_ratio}
         .viewerConfig=${this.viewerConfig}
         .resolvedMediaCache=${this.resolvedMediaCache}
         .cameraManager=${this.cameraManager}
