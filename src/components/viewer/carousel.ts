@@ -235,7 +235,12 @@ export class AdvancedCameraCardViewerCarousel extends LitElement {
       // Full width even when max_height binds: aspect-ratio would otherwise
       // narrow the frame instead of letterboxing the media inside it.
       this.style.width = ratio ? '100%' : '';
-      this.style.backgroundColor = ratio ? 'black' : '';
+      // Media backgrounds use the themed card colour; letterbox in black.
+      if (ratio) {
+        this.style.setProperty('--advanced-camera-card-background', 'black');
+      } else {
+        this.style.removeProperty('--advanced-camera-card-background');
+      }
       if (ratio) {
         this.style.maxHeight = this.viewerConfig?.max_height ?? '';
       }
