@@ -232,6 +232,10 @@ export class AdvancedCameraCardViewerCarousel extends LitElement {
     if (changedProps.has('viewerConfig')) {
       const ratio = this.viewerConfig?.aspect_ratio;
       this.style.aspectRatio = ratio ? `${ratio[0]} / ${ratio[1]}` : '';
+      // Full width even when max_height binds: aspect-ratio would otherwise
+      // narrow the frame instead of letterboxing the media inside it.
+      this.style.width = ratio ? '100%' : '';
+      this.style.backgroundColor = ratio ? 'black' : '';
       if (ratio) {
         this.style.maxHeight = this.viewerConfig?.max_height ?? '';
       }

@@ -293,5 +293,6 @@ describe('AdvancedCameraCardViewerCarousel', () => {
     // The cap wins over the ratio; the media letterboxes inside it.
     expect(carousel.style.aspectRatio).toBe('16 / 9');
     expect(carousel.getBoundingClientRect().height).toBeCloseTo(100, 0);
+    expect(carousel.style.width).toBe('100%');
   });
 });
