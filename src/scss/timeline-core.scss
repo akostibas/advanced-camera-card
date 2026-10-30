@@ -20,6 +20,9 @@
   isolation: isolate;
 
   background-color: var(--advanced-camera-card-timeline-background);
+
+  // Lets the tools drop to their own row when they'd cover the date label.
+  container-type: inline-size;
 }
 
 :host(:not([mini])) {
@@ -247,6 +250,13 @@ div.vis-tooltip {
   border-top-left-radius: var(--advanced-camera-card-border-radius-final);
 
   z-index: 10;
+}
+@container (max-width: 600px) {
+  .timeline-tools {
+    position: static;
+    justify-content: flex-end;
+    border-radius: 0;
+  }
 }
 .timeline-tools * {
   cursor: pointer;

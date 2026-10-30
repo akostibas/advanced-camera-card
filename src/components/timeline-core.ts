@@ -200,11 +200,11 @@ export class AdvancedCameraCardTimelineCore extends LitElement {
             : 'mdi:camera-lock';
 
     return html` <div
-      @advanced-camera-card:timeline:thumbnail-data-request=${this._controller
-        .handleThumbnailDataRequest}
-      class="timeline"
-      ${ref(this._refTimeline)}
-    >
+        @advanced-camera-card:timeline:thumbnail-data-request=${this._controller
+          .handleThumbnailDataRequest}
+        class="timeline"
+        ${ref(this._refTimeline)}
+      ></div>
       <div class="timeline-tools">
         ${WHAT_CATEGORIES.map(
           (category) =>
@@ -243,8 +243,7 @@ export class AdvancedCameraCardTimelineCore extends LitElement {
           }}
         >
         </advanced-camera-card-date-picker>
-      </div>
-    </div>`;
+      </div>`;
   }
 
   /**

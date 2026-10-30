@@ -84,6 +84,38 @@ describe('AdvancedCameraCardTimelineCore', () => {
     expect(getComputedStyle(tools).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   });
 
+  describe('should keep the tools off the date label', () => {
+    const mountAtWidth = async (width: string): Promise<MountedCard> => {
+      const hass = createCameraHASS([createFrigateCameraDescription()]);
+      new FakeFrigate(hass).setEvents([
+        createTestFrigateEvent('event', EVENT_TIME_NEWER),
+      ]);
+      return await MountedCardFactory.createFromSource(
+        createStillImageCardConfig({ view: { default: 'timeline' } }),
+        hass,
+        { width, toleratedConsoleErrors: [RESIZE_LOOP_CONSOLE_ERROR] },
+      );
+    };
+
+    it('by giving them their own row on a phone', async () => {
+      const card = await mountAtWidth('390px');
+      const tools = await card.waitForSelector<HTMLElement>('.timeline-tools');
+      // The date ("Fri 30 October") is visjs' major label, bottom left.
+      const date = await card.waitForSelector<HTMLElement>('.vis-text.vis-major');
+
+      expect(tools.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        date.getBoundingClientRect().bottom - 1,
+      );
+    });
+
+    it('but overlay the axis where there is room', async () => {
+      const card = await mountAtWidth('900px');
+      const tools = await card.waitForSelector<HTMLElement>('.timeline-tools');
+
+      expect(getComputedStyle(tools).position).toBe('absolute');
+    });
+  });
+
   it('should move the mini timeline to the next pan mode each time the pan control is clicked', async () => {
     const card = await mountCardWithTimeline({
       view: { default: 'live' },
