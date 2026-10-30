@@ -476,6 +476,29 @@ describe('TimelineController', () => {
 
       expect(view.context?.mediaViewer?.seek).toEqual(clickTime);
     });
+
+    it('should zoom into a cluster on a single click', async () => {
+      const harness = await createHarness({ media: [createReviewMedia()] });
+      const cluster = document.createElement('div');
+      cluster.className = 'vis-item vis-cluster';
+      const content = document.createElement('div');
+      cluster.append(content);
+      const dblclick = vi.fn();
+      cluster.addEventListener('dblclick', dblclick);
+      const event = new Event('click');
+      Object.defineProperty(event, 'target', { value: content });
+
+      harness.trigger('click', {
+        what: 'item',
+        item: 'cluster-1',
+        isCluster: true,
+        group: CAMERA_ID,
+        event,
+      });
+
+      expect(dblclick).toHaveBeenCalled();
+      expect(harness.manager.setViewByParameters).not.toHaveBeenCalled();
+    });
   });
 });
 

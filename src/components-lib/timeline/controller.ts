@@ -543,6 +543,14 @@ export class TimelineController {
       return;
     }
 
+    if (properties.isCluster) {
+      // vis-timeline only zooms into a cluster on double-click; awkward on touch.
+      (properties.event.target as HTMLElement | null)
+        ?.closest('.vis-cluster')
+        ?.dispatchEvent(new MouseEvent('dblclick'));
+      return;
+    }
+
     let drawerAction: 'open' | 'close' = 'close';
 
     if (
@@ -917,7 +925,6 @@ export class TimelineController {
 
   private _isClustering(): boolean {
     return (
-      this._timelineConfig?.style === 'stack' &&
       !!this._timelineConfig?.clustering_threshold &&
       this._timelineConfig.clustering_threshold > 0
     );
@@ -1063,9 +1070,9 @@ export class TimelineController {
         // has items; a ribbon row only stays a fixed height below ~16px.
         ...(this._timelineConfig.style === 'ribbon' && { axis: 14 }),
         item: {
-          // In ribbon mode, a 20px item is reduced to 6px, so need to add a
-          // 14px margin to ensure items line up with subgroups.
-          vertical: stack ? 10 : 24,
+          // In ribbon mode, a 20px item is reduced to 12px, so need to add an
+          // 8px margin to ensure items line up with subgroups.
+          vertical: stack ? 10 : 18,
         },
       },
       selectable: true,

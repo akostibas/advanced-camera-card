@@ -60,7 +60,12 @@ div.timeline {
 
 :host([ribbon]) .vis-item:not(.vis-background) {
   // Ribbon timelines have a much shorter 'bar'.
-  height: 6px;
+  height: 12px;
+}
+:host([ribbon]) .vis-item.vis-cluster {
+  font-size: 10px;
+  line-height: 12px;
+  text-align: center;
 }
 .vis-item {
   --advanced-camera-card-timeline-item-current-color: var(
