@@ -238,6 +238,20 @@ describe('TimelineController', () => {
       expect(getUncachedFetches(harness)).toBe(2);
     });
 
+    it('and keep the scroll limit an hour past now', async () => {
+      const now = add(WINDOW.end, { days: 2 });
+      vi.useFakeTimers({ now, toFake: ['setTimeout', 'setInterval', 'Date'] });
+      const harness = await createHarness();
+      expect(timelineConstructor.mock.calls[0]?.at(-1).max).toEqual(
+        add(now, { hours: 1 }),
+      );
+
+      await vi.advanceTimersByTimeAsync(65 * 1000);
+      expect(harness.timeline.setOptions).toHaveBeenLastCalledWith({
+        max: add(now, { hours: 1, seconds: 65 }),
+      });
+    });
+
     it('but not when looking at an earlier day', async () => {
       vi.useFakeTimers({
         now: add(WINDOW.end, { days: 2 }),

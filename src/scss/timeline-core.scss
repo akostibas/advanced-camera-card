@@ -63,7 +63,13 @@ div.timeline {
   height: 12px;
 }
 :host([ribbon]) .vis-item.vis-cluster {
+  // Read as a bar with a count, not the stack style's dotted box.
+  border-style: solid;
+  background-color: var(--advanced-camera-card-timeline-item-color);
+  box-shadow: none;
+  color: white;
   font-size: 10px;
+  font-weight: bold;
   line-height: 12px;
   text-align: center;
 }

@@ -85,6 +85,8 @@ const TIMELINE_TARGET_BAR_ID = 'target_bar';
 
 const LIVE_FIRST_REFRESH_SECONDS = 5;
 const LIVE_REFRESH_SECONDS = 60;
+// How far past now the timeline may scroll; re-applied by the live refresh.
+const getFutureLimit = (): Date => add(new Date(), { hours: 1 });
 
 export class TimelineController {
   private _host: LitElement;
@@ -699,6 +701,7 @@ export class TimelineController {
   }
 
   private _refreshLive = (): void => {
+    this._timeline?.setOptions({ max: getFutureLimit() });
     const window = this._timeline?.getWindow();
     if (
       !window ||
@@ -1065,6 +1068,9 @@ export class TimelineController {
       maxHeight: '100%',
       zoomMax: 1 * 24 * 60 * 60 * 1000,
       zoomMin: 1 * 1000,
+      // vis-timeline's default (5) takes dozens of wheel steps to reach a day.
+      zoomFriction: 2,
+      max: getFutureLimit(),
       margin: {
         // vis-timeline grows the row nearest the axis by the axis margin when it
         // has items; a ribbon row only stays a fixed height below ~16px.
