@@ -25,6 +25,7 @@ export const viewerConfigDefault = {
   auto_mute: [...MEDIA_ACTION_NEGATIVE_CONDITIONS],
   auto_unmute: [],
   lazy_load: true,
+  lazy_unload: [],
   draggable: true,
   zoomable: true,
   transition_effect: 'slide' as const,
@@ -87,6 +88,10 @@ export const viewerConfigSchema = z
     aspect_ratio: aspectRatioSchema.optional(),
     // CSS height cap for a fixed-shape viewer; past it the media letterboxes.
     max_height: z.string().optional(),
+    lazy_unload: z
+      .enum(MEDIA_ACTION_NEGATIVE_CONDITIONS)
+      .array()
+      .default(viewerConfigDefault.lazy_unload),
     draggable: z.boolean().default(viewerConfigDefault.draggable),
     zoomable: z.boolean().default(viewerConfigDefault.zoomable),
     transition_effect: transitionEffectConfigSchema.default(

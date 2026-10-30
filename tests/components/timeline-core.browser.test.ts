@@ -133,7 +133,8 @@ describe('AdvancedCameraCardTimelineCore', () => {
 
     // Check that the tools are visible when the drawer is closed.
     const box = tools.getBoundingClientRect();
-    const x = box.left + 1;
+    // The right edge: the (right-hand) drawer needn't cover a wide toolbar's left.
+    const x = box.right - 1;
     const y = box.top + box.height / 2;
     expect(getElementAtPoint(x, y)).toBe(tools);
 

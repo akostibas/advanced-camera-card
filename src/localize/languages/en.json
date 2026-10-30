@@ -530,6 +530,7 @@
       },
       "draggable": "Draggable",
       "lazy_load": "Media Viewer media is lazily loaded in carousel",
+      "lazy_unload": "Media Viewer media is lazily unloaded from carousel",
       "snapshot_click_plays_clip": "Clicking on a snapshot plays a related clip",
       "transition_effect": "Media Viewer transition effect",
       "zoomable": "Zoomable/Pannable"

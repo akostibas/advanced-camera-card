@@ -164,6 +164,7 @@ export class AdvancedCameraCardViewerProvider extends LitElement implements Medi
     if (changedProps.has('viewerConfig') || changedProps.has('forceSelected')) {
       this._lazyLoadController.setConfiguration({
         lazyLoad: this.viewerConfig?.lazy_load,
+        lazyUnloadConditions: this.viewerConfig?.lazy_unload,
         forceSelected: this.forceSelected,
       });
     }

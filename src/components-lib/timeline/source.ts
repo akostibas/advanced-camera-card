@@ -228,10 +228,11 @@ export class TimelineDataSource {
     });
   }
 
-  private async _refreshQuery(window: TimelineWindow): Promise<void> {
+  private async _refreshQuery(window: TimelineWindow, useCache: boolean): Promise<void> {
     const cacheFriendlyWindow = convertRangeToCacheFriendlyTimes(window);
 
     if (
+      useCache &&
       this._cache.hasCoverage({
         start: cacheFriendlyWindow.start,
         end: sub(capEndDate(cacheFriendlyWindow.end), {
@@ -247,17 +248,20 @@ export class TimelineDataSource {
       end: cacheFriendlyWindow.end,
     });
 
-    this.addMediaToDataset(query, await this._runner.execute(query));
+    this.addMediaToDataset(query, await this._runner.execute(query, { useCache }));
     this._cache.add({
       ...cacheFriendlyWindow,
       expires: add(new Date(), { seconds: TIMELINE_FRESHNESS_TOLERANCE_SECONDS }),
     });
   }
 
-  public async refresh(window: TimelineWindow): Promise<void> {
+  public async refresh(
+    window: TimelineWindow,
+    options?: { useCache?: boolean },
+  ): Promise<void> {
     try {
       await Promise.all([
-        this._refreshQuery(window),
+        this._refreshQuery(window, options?.useCache ?? true),
         ...(this._showRecordings ? [this._refreshRecordings(window)] : []),
       ]);
     } catch (e) {
