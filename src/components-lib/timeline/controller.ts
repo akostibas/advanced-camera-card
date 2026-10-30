@@ -1,4 +1,4 @@
-import { add, differenceInSeconds, sub } from 'date-fns';
+import { add, differenceInSeconds, startOfDay, sub } from 'date-fns';
 import type { LitElement } from 'lit';
 import { isEqual, omit, throttle } from 'lodash-es';
 import type { ViewContext } from 'view';
@@ -36,6 +36,7 @@ import { stopEventFromActivatingCardWideActions } from '../../utils/action';
 import { formatDateAndTime, isHoverableDevice, isTruthy } from '../../utils/basic';
 import { findBestMediaTimeIndex } from '../../utils/find-best-media-time-index';
 import { fireAdvancedCameraCardEvent } from '../../utils/fire-advanced-camera-card-event';
+import { Timer } from '../../utils/timer';
 import type { ViewMedia } from '../../view/item';
 import { ViewItemClassifier } from '../../view/item-classifier';
 import { QueryResults } from '../../view/query-results';
@@ -82,6 +83,9 @@ interface TimelineControllerOptions {
 
 const TIMELINE_TARGET_BAR_ID = 'target_bar';
 
+const LIVE_FIRST_REFRESH_SECONDS = 5;
+const LIVE_REFRESH_SECONDS = 60;
+
 export class TimelineController {
   private _host: LitElement;
   private _timelineElement: HTMLElement | null = null;
@@ -122,6 +126,10 @@ export class TimelineController {
     | null = null;
   private _ignoreClick = false;
 
+  // While today is in view, re-fetch it (bypassing caches) so new clips appear
+  // without user action: soon after opening, then every minute.
+  private _liveTimer = new Timer();
+
   constructor(host: LitElement) {
     this._host = host;
   }
@@ -131,6 +139,7 @@ export class TimelineController {
   }
 
   public destroyTimeline(): void {
+    this._liveTimer.stop();
     this._timeline?.destroy();
     this._timeline = null;
     this._targetBarVisible = false;
@@ -316,6 +325,10 @@ export class TimelineController {
     }
 
     this._timeline.on('rangechanged', this._timelineRangeChangedHandler.bind(this));
+    this._liveTimer.start(LIVE_FIRST_REFRESH_SECONDS, () => {
+      this._refreshLive();
+      this._liveTimer.startRepeated(LIVE_REFRESH_SECONDS, this._refreshLive);
+    });
     this._timeline.on('click', this._timelineClickHandler.bind(this));
     this._timeline.on('rangechange', this._timelineRangeChangeHandler.bind(this));
 
@@ -676,6 +689,19 @@ export class TimelineController {
       end: cacheFriendlyWindow.end,
     });
   }
+
+  private _refreshLive = (): void => {
+    const window = this._timeline?.getWindow();
+    if (
+      !window ||
+      this._pointerHeld ||
+      document.visibilityState !== 'visible' ||
+      window.end < startOfDay(new Date())
+    ) {
+      return;
+    }
+    void this._source?.refresh(window, { useCache: false });
+  };
 
   private _timelineRangeChangedHandler = async (properties: {
     start: Date;

@@ -1,7 +1,7 @@
 import { add } from 'date-fns';
 import { LitElement } from 'lit';
 import type { TimelineEventPropertiesResult, TimelineWindow } from 'vis-timeline';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mock } from 'vitest-mock-extended';
 
 import type { CameraManager } from '../../../src/camera-manager/manager';
@@ -207,6 +207,47 @@ describe('TimelineController', () => {
     for (const query of queries) {
       expect(query.limit).toBeUndefined();
     }
+  });
+
+  describe('should re-fetch today while it is in view', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const getUncachedFetches = (harness: TestHarness): number =>
+      vi
+        .mocked(harness.cameraManager.executeMediaQueries)
+        .mock.calls.filter((call) => call[1]?.useCache === false).length;
+
+    it('soon after opening, then every minute', async () => {
+      vi.useFakeTimers({
+        now: add(WINDOW.end, { minutes: 10 }),
+        toFake: ['setTimeout', 'setInterval', 'Date'],
+      });
+      const harness = await createHarness();
+      expect(getUncachedFetches(harness)).toBe(0);
+
+      await vi.advanceTimersByTimeAsync(5 * 1000);
+      expect(getUncachedFetches(harness)).toBe(1);
+
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(getUncachedFetches(harness)).toBe(2);
+
+      harness.controller.destroyTimeline();
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(getUncachedFetches(harness)).toBe(2);
+    });
+
+    it('but not when looking at an earlier day', async () => {
+      vi.useFakeTimers({
+        now: add(WINDOW.end, { days: 2 }),
+        toFake: ['setTimeout', 'setInterval', 'Date'],
+      });
+      const harness = await createHarness();
+
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+      expect(getUncachedFetches(harness)).toBe(0);
+    });
   });
 
   describe('should decide what can be clustered', () => {
