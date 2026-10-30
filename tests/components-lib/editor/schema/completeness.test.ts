@@ -78,6 +78,10 @@ const EDITOR_EXCLUDED = [
   'cameras.dimensions.grid',
   'cameras.triggers.events.context',
 
+  // Fork-only (family-infra) viewer sizing; YAML-only to keep the fork small.
+  'media_viewer.aspect_ratio',
+  'media_viewer.max_height',
+
   // Free-form CSS variable overrides.
   'view.theme.overrides',
 
