@@ -94,6 +94,7 @@ const createHarness = async (options?: {
     }
   });
   timeline.getWindow.mockReturnValue(WINDOW);
+  timeline.range = { setOptions: vi.fn() };
   timeline.getSelection.mockReturnValue(selection);
   timeline.setSelection.mockImplementation((ids): void => {
     selection.length = 0;
@@ -194,6 +195,27 @@ describe('TimelineController', () => {
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
   });
 
+  it('should merge ribbon bars only where their minimum widths overlap', async () => {
+    const harness = await createHarness();
+    // 600px for the hour-long window: 10px is a minute.
+    Object.assign(harness.timeline, { body: { domProps: { center: { width: 600 } } } });
+    const criteria = timelineConstructor.mock.calls[0]?.at(-1).cluster.clusterCriteria;
+    const item = (id: string, startMinutes: number, endSeconds: number) => {
+      const start = add(WINDOW.start, { minutes: startMinutes });
+      const end = add(start, { seconds: endSeconds });
+      return {
+        id,
+        type: 'range',
+        start: start.getTime(),
+        end: end.getTime(),
+        media: createReviewMedia({ id, startTime: start, endTime: end }),
+      };
+    };
+
+    expect(criteria(item('a', 0, 10), item('b', 0.75, 10))).toBe(true);
+    expect(criteria(item('a', 0, 10), item('c', 5, 10))).toBe(false);
+  });
+
   it('should redraw on its own resize rather than polling the window', async () => {
     const harness = await createHarness();
     expect(timelineConstructor.mock.calls[0]?.at(-1).autoResize).toBe(false);
@@ -263,7 +285,8 @@ describe('TimelineController', () => {
       );
 
       await vi.advanceTimersByTimeAsync(65 * 1000);
-      expect(harness.timeline.setOptions).toHaveBeenLastCalledWith({
+      expect(harness.timeline.setOptions).not.toHaveBeenCalled();
+      expect(harness.timeline.range?.setOptions).toHaveBeenLastCalledWith({
         max: add(now, { hours: 1, seconds: 65 }),
       });
     });
@@ -502,32 +525,39 @@ describe('TimelineController', () => {
       const parameters = vi.mocked(harness.manager.setViewByParameters).mock
         .calls[0]?.[0];
       const view = createView();
+      expect(parameters).toBeDefined();
       parameters?.modifiers?.forEach((modifier) => modifier.modify(view));
 
       expect(view.context?.mediaViewer?.seek).toBeUndefined();
     });
 
-    it('should zoom into a cluster on a single click', async () => {
-      const harness = await createHarness({ media: [createReviewMedia()] });
-      const cluster = document.createElement('div');
-      cluster.className = 'vis-item vis-cluster';
-      const content = document.createElement('div');
-      cluster.append(content);
-      const dblclick = vi.fn();
-      cluster.addEventListener('dblclick', dblclick);
-      const event = new Event('click');
-      Object.defineProperty(event, 'target', { value: content });
+    it('should play the clip nearest a tap on a merged bar', async () => {
+      const harness = await createHarness({
+        media: [
+          createReviewMedia(),
+          createReviewMedia({
+            id: 'review-2',
+            startTime: add(WINDOW.start, { minutes: 40 }),
+            endTime: add(WINDOW.start, { minutes: 41 }),
+          }),
+        ],
+      });
 
       harness.trigger('click', {
         what: 'item',
         item: 'cluster-1',
         isCluster: true,
-        group: CAMERA_ID,
-        event,
+        group: `camera/${CAMERA_ID}`,
+        time: add(WINDOW.start, { minutes: 38 }),
+        event: new Event('click'),
       });
 
-      expect(dblclick).toHaveBeenCalled();
-      expect(harness.manager.setViewByParameters).not.toHaveBeenCalled();
+      const parameters = vi.mocked(harness.manager.setViewByParameters).mock
+        .calls[0]?.[0];
+      expect(vi.mocked(harness.manager.setViewByParameters).mock.calls.length).toBe(1);
+      expect(parameters?.params?.queryResults?.getSelectedResult()?.getID()).toBe(
+        'review-2',
+      );
     });
   });
 });

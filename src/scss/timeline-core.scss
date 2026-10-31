@@ -64,6 +64,8 @@ div.timeline {
 :host([ribbon]) .vis-item:not(.vis-background) {
   // Ribbon timelines have a much shorter 'bar'.
   height: 12px;
+  // Keeps short clips tappable; bars that would overlap merge (controller.ts).
+  min-width: 10px;
 }
 :host([ribbon]) .vis-item.vis-cluster {
   // Read as a bar with a count, not the stack style's dotted box.

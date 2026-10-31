@@ -24,6 +24,10 @@ export class ThumbnailDataRequestEvent extends CustomEvent<ThumbnailDataRequest>
 export interface ExtendedTimeline extends Timeline {
   // setCustomTimeMarker currently missing from Timeline types.
   setCustomTimeMarker?(time: DateType, id?: IdType): void;
+
+  // vis-timeline's (untyped) range controller. Unlike Timeline.setOptions(), its
+  // setOptions() leaves options it isn't given alone.
+  range?: { setOptions(options: { max?: DateType }): void };
 }
 
 export interface TimelineRangeChange extends TimelineWindow {

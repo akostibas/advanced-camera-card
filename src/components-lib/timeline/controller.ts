@@ -85,6 +85,9 @@ const TIMELINE_TARGET_BAR_ID = 'target_bar';
 const LIVE_FIRST_REFRESH_SECONDS = 5;
 const LIVE_REFRESH_SECONDS = 60;
 // How far past now the timeline may scroll; re-applied by the live refresh.
+// Matches the ribbon bar `min-width` in timeline-core.scss.
+const RIBBON_MIN_ITEM_PX = 10;
+
 const getFutureLimit = (): Date => add(new Date(), { hours: 1 });
 
 export class TimelineController {
@@ -537,7 +540,11 @@ export class TimelineController {
     }
 
     const view = this._viewManagerEpoch?.manager.getView();
-    const id = properties.item ? String(properties.item) : null;
+    const id = properties.isCluster
+      ? this._getNearestItemID(String(properties.group), properties.time)
+      : properties.item
+        ? String(properties.item)
+        : null;
     const item = id ? this._source?.dataset.get(id) ?? null : null;
 
     if (
@@ -547,14 +554,6 @@ export class TimelineController {
       !this._source ||
       !properties.what
     ) {
-      return;
-    }
-
-    if (properties.isCluster) {
-      // vis-timeline only zooms into a cluster on double-click; awkward on touch.
-      (properties.event.target as HTMLElement | null)
-        ?.closest('.vis-cluster')
-        ?.dispatchEvent(new MouseEvent('dblclick'));
       return;
     }
 
@@ -701,7 +700,8 @@ export class TimelineController {
   }
 
   private _refreshLive = (): void => {
-    this._timeline?.setOptions({ max: getFutureLimit() });
+    // Not Timeline.setOptions(): options without `cluster` switch clustering off.
+    this._timeline?.range?.setOptions({ max: getFutureLimit() });
     const window = this._timeline?.getWindow();
     if (
       !window ||
@@ -1009,6 +1009,43 @@ export class TimelineController {
     };
   }
 
+  // The clip in a group closest to a time (e.g. where a merged bar was tapped).
+  private _getNearestItemID(group: string, time: Date): string | null {
+    const distance = (item: AdvancedCameraCardTimelineItem): number =>
+      Math.max(0, item.start - time.getTime(), time.getTime() - (item.end ?? item.start));
+    const items = this._filteredItems?.get({
+      filter: (item) => String(item.group) === group && item.type !== 'background',
+    });
+    const nearest = items?.reduce<AdvancedCameraCardTimelineItem | null>(
+      (best, item) => (!best || distance(item) < distance(best) ? item : best),
+      null,
+    );
+    return nearest ? String(nearest.id) : null;
+  }
+
+  // Whether two ribbon bars, each drawn at least RIBBON_MIN_ITEM_PX wide, would
+  // overlap at the current zoom.
+  private _wouldOverlap(first: TimelineItem, second: TimelineItem): boolean {
+    const window = this._timeline?.getWindow();
+    // vis-timeline keeps the item area's width here, read without a layout.
+    const width = (
+      this._timeline as unknown as { body?: { domProps: { center: { width: number } } } }
+    )?.body?.domProps.center.width;
+    if (!window || !width) {
+      return false;
+    }
+    const minMs =
+      (RIBBON_MIN_ITEM_PX * (window.end.getTime() - window.start.getTime())) / width;
+    const bounds = (item: TimelineItem): [number, number] => {
+      const start = new Date(item.start).getTime();
+      const end = item.end ? new Date(item.end).getTime() : start;
+      return [start, Math.max(end, start + minMs)];
+    };
+    const [firstStart, firstEnd] = bounds(first);
+    const [secondStart, secondEnd] = bounds(second);
+    return firstStart < secondEnd && secondStart < firstEnd;
+  }
+
   private _canCluster(first: TimelineItem, second: TimelineItem): boolean {
     const selectedIDs = this._getAllSelectedMediaIDsFromView();
     const firstMedia = (<AdvancedCameraCardTimelineItem>first).media;
@@ -1023,6 +1060,10 @@ export class TimelineController {
       !firstMedia ||
       !secondMedia
     ) {
+      return false;
+    }
+
+    if (this._timelineConfig?.style === 'ribbon' && !this._wouldOverlap(first, second)) {
       return false;
     }
 
@@ -1055,7 +1096,8 @@ export class TimelineController {
             // and if we adjust `maxItems` then we can get into an infinite
             // resize loop. Adjusting the `maxItems` of a timeline, after it's
             // created, also does not appear to work as expected.
-            maxItems: this._timelineConfig.clustering_threshold,
+            // Ribbon bars can't stack, so any two that would overlap merge.
+            maxItems: stack ? this._timelineConfig.clustering_threshold : 1,
 
             clusterCriteria: this._canCluster.bind(this),
           }
