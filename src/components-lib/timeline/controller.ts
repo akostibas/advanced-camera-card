@@ -132,6 +132,10 @@ export class TimelineController {
   // without user action: soon after opening, then every minute.
   private _liveTimer = new Timer();
 
+  // Replaces visjs' autoResize, which reads the root's size on every window
+  // resize and every second: each read forces a page layout (~1s on iPhones).
+  private _resizeObserver = new ResizeObserver(() => this._timeline?.redraw());
+
   constructor(host: LitElement) {
     this._host = host;
   }
@@ -142,6 +146,7 @@ export class TimelineController {
 
   public destroyTimeline(): void {
     this._liveTimer.stop();
+    this._resizeObserver.disconnect();
     this._timeline?.destroy();
     this._timeline = null;
     this._targetBarVisible = false;
@@ -326,6 +331,7 @@ export class TimelineController {
       this._timeline = new Timeline(this._timelineElement, this._filteredItems, options);
     }
 
+    this._resizeObserver.observe(this._timelineElement);
     this._timeline.on('rangechanged', this._timelineRangeChangedHandler.bind(this));
     this._liveTimer.start(LIVE_FIRST_REFRESH_SECONDS, () => {
       this._refreshLive();
@@ -1062,6 +1068,7 @@ export class TimelineController {
         : // Timeline type information is incorrect requiring this 'as'.
           (false as unknown as TimelineOptionsCluster),
 
+      autoResize: false,
       dataAttributes: ['severity'],
 
       minHeight: '100%',

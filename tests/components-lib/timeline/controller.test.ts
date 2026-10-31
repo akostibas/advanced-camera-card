@@ -25,7 +25,12 @@ import { ViewMediaType, type ViewMedia } from '../../../src/view/item';
 import { QueryResults } from '../../../src/view/query-results';
 import { UnifiedQuery } from '../../../src/view/unified-query';
 import { createCameraManager, createStore } from '../../camera-manager/test-utils';
-import { createHASS, stubMatchMedia } from '../../test-utils';
+import {
+  callResizeHandler,
+  createHASS,
+  ResizeObserverMock,
+  stubMatchMedia,
+} from '../../test-utils';
 import { createReviewQuery, createView, TestViewMedia } from '../../view/test-utils';
 
 // Vitest hoists vi.mock above this, so its factory can only reach a vi.hoisted value.
@@ -186,6 +191,17 @@ const dragTimeline = (harness: TestHarness, pointerTime: Date): void => {
 describe('TimelineController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+  });
+
+  it('should redraw on its own resize rather than polling the window', async () => {
+    const harness = await createHarness();
+    expect(timelineConstructor.mock.calls[0]?.at(-1).autoResize).toBe(false);
+
+    callResizeHandler([
+      { target: document.createElement('div'), width: 10, height: 10 },
+    ]);
+    expect(harness.timeline.redraw).toHaveBeenCalled();
   });
 
   it('should render the item severity as a data attribute', async () => {

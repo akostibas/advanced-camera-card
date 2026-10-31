@@ -214,6 +214,12 @@ export class AdvancedCameraCardViewerCarousel extends LitElement {
     if (!this._media) {
       return [];
     }
+    if (this.viewerConfig?.selected_only) {
+      const media = this._selected === null ? null : this._media[this._selected];
+      // Keyed so a new clip gets a fresh player, as a new slide would.
+      const slide = media ? this._renderMediaItem(media, true) : null;
+      return slide ? [html`${keyed(media?.getID(), slide)}`] : [];
+    }
 
     const slides: TemplateResult[] = [];
     for (let i = 0; i < this._media.length; ++i) {
@@ -361,14 +367,16 @@ export class AdvancedCameraCardViewerCarousel extends LitElement {
       return;
     }
 
-    const neighbors = this._getMediaNeighbors();
+    const neighbors = this.viewerConfig?.selected_only
+      ? null
+      : this._getMediaNeighbors();
     const view = this.viewManagerEpoch?.manager.getView();
 
     return html`
       <advanced-camera-card-carousel
         ${ref(this._refCarousel)}
         .dragEnabled=${this.viewerConfig?.draggable ?? true}
-        .selected=${this._selected}
+        .selected=${this._getSelectedSlideIndex()}
         .wheelScrolling=${this.viewerConfig?.controls.wheel}
         transitionEffect=${this._getTransitionEffect()}
         @advanced-camera-card:carousel:select=${(ev: CustomEvent<CarouselSelected>) => {
@@ -426,19 +434,25 @@ export class AdvancedCameraCardViewerCarousel extends LitElement {
     }
   }
 
+  private _getSelectedSlideIndex(): number | null {
+    return this.viewerConfig?.selected_only && this._selected !== null
+      ? 0
+      : this._selected;
+  }
+
   private _setMediaTarget(): void {
     if (!this._media?.length || this._selected === null) {
       this._mediaActionsController.unsetTarget();
     } else {
       void this._mediaActionsController.setTarget(
-        this._selected,
+        this._getSelectedSlideIndex() ?? 0,
         // Camera in this carousel is only selected if the camera from the view
         // matches the filtered camera.
         this.viewFilterCameraID
           ? this.viewManagerEpoch?.manager.getView()?.camera === this.viewFilterCameraID
           : true,
       );
-      this._mediaHeightController.setSelected(this._selected);
+      this._mediaHeightController.setSelected(this._getSelectedSlideIndex() ?? 0);
     }
   }
 

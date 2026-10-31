@@ -84,6 +84,9 @@ export const viewerConfigSchema = z
       .array()
       .default(viewerConfigDefault.auto_unmute),
     lazy_load: z.boolean().default(viewerConfigDefault.lazy_load),
+    // Render only the selected media, not a slide per item. Without the other
+    // slides, only something outside the viewer (e.g. a timeline) can switch.
+    selected_only: z.boolean().optional(),
     // Fixes the viewer's shape instead of resizing it to each media item.
     aspect_ratio: aspectRatioSchema.optional(),
     // CSS height cap for a fixed-shape viewer; past it the media letterboxes.

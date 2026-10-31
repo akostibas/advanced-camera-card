@@ -279,6 +279,30 @@ describe('AdvancedCameraCardViewerCarousel', () => {
     );
   });
 
+  it('should render only the selected media when configured to', async () => {
+    const card = await mountViewer(EVENTS, {
+      config: {
+        ...CONFIG_THUMBNAILS_BELOW,
+        media_viewer: { ...CONFIG_THUMBNAILS_BELOW.media_viewer, selected_only: true },
+      },
+    });
+    const countProviders = (): number =>
+      deepQuery(
+        card.card,
+        'advanced-camera-card-viewer-carousel',
+      )?.shadowRoot?.querySelectorAll('advanced-camera-card-viewer-provider').length ??
+      0;
+    expect(countProviders()).toBe(1);
+
+    // Switching still works, from outside the viewer.
+    // The viewer's own thumbnails run oldest first.
+    await clickThumbnail(card.card, 0);
+    await waitForMediaViewerMedia(card, 'clip.webm?event=older');
+    expect(countProviders()).toBe(1);
+    await waitForMediaViewerMedia(card, 'clip.webm?event=older');
+    expect(countProviders()).toBe(1);
+  });
+
   it('should keep a fixed shape when an aspect ratio is configured', async () => {
     const card = await mountViewer(EVENTS, {
       config: { media_viewer: { aspect_ratio: [16, 9], max_height: '100px' } },

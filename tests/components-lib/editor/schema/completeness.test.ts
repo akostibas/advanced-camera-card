@@ -81,6 +81,7 @@ const EDITOR_EXCLUDED = [
   // Fork-only (family-infra) viewer sizing; YAML-only to keep the fork small.
   'media_viewer.aspect_ratio',
   'media_viewer.max_height',
+  'media_viewer.selected_only',
 
   // Free-form CSS variable overrides.
   'view.theme.overrides',
