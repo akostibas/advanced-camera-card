@@ -42,7 +42,6 @@ import { ViewItemClassifier } from '../../view/item-classifier';
 import { QueryResults } from '../../view/query-results';
 import { UnifiedQuery } from '../../view/unified-query';
 import { UnifiedQueryTransformer } from '../../view/unified-query-transformer';
-import { mergeViewContext } from '../../view/view';
 import {
   canMediaBeShownAsTimelineItem,
   TimelineDataSource,
@@ -607,14 +606,9 @@ export class TimelineController {
       const newResults = results
         ?.resetSelectedResult()
         .selectResultIfFound((media) => media.getID() === id, criteria);
-      const selectedItem = newResults?.getSelectedResult();
-      const context: ViewContext = mergeViewContext(this._getTimelineContext(), {
-        ...(canMediaBeShownAsTimelineItem(selectedItem) &&
-          // Only attempt to seek if the media has a real end time, otherwise
-          // the viewer cannot actually seek there and shows the unseekable
-          // message.
-          selectedItem.getEndTime() && { mediaViewer: { seek: properties.time } }),
-      });
+      // A clicked clip plays from its start: at a day's zoom a clip is a pixel
+      // or two wide, so the clicked time is rarely inside it.
+      const context: ViewContext = this._getTimelineContext();
 
       if (!newResults || !newResults.hasSelectedResult()) {
         // This can happen in a few situations:

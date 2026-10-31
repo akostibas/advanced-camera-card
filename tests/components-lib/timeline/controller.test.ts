@@ -487,7 +487,7 @@ describe('TimelineController', () => {
   });
 
   describe('should handle a click on an item', () => {
-    it('should seek to the clicked time within a review', async () => {
+    it('should play a clicked review from its start', async () => {
       const harness = await createHarness({ media: [createReviewMedia()] });
       const clickTime = add(WINDOW.start, { minutes: 30 });
 
@@ -504,7 +504,7 @@ describe('TimelineController', () => {
       const view = createView();
       parameters?.modifiers?.forEach((modifier) => modifier.modify(view));
 
-      expect(view.context?.mediaViewer?.seek).toEqual(clickTime);
+      expect(view.context?.mediaViewer?.seek).toBeUndefined();
     });
 
     it('should zoom into a cluster on a single click', async () => {
