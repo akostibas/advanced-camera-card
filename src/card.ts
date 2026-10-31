@@ -59,11 +59,13 @@ import type {
 } from './config/types.js';
 import { REPO_URL } from './const.js';
 import { registerCustomIconset } from './ha/custom-icons.js';
+import { isHassDifferent } from './ha/is-hass-different.js';
 import type { HomeAssistant, LovelaceCardEditor } from './ha/types.js';
 import { localize } from './localize/localize.js';
 import cardStyle from './scss/card.scss?inline';
 import type { MediaLoadedInfoEventDetail } from './types.js';
 import { hasAction } from './utils/action.js';
+import { isTruthy } from './utils/basic.js';
 import { getReleaseVersion } from './utils/build-info.js';
 
 // ***************************************************************************
@@ -153,6 +155,7 @@ export class AdvancedCameraCard extends LitElement {
   }
 
   set hass(hass: HomeAssistant) {
+    const oldHass = this._hass;
     this._controller.getHASSManager().setHASS(hass);
 
     // Manually set hass in the menu, elements and image. This is to allow these
@@ -164,9 +167,26 @@ export class AdvancedCameraCard extends LitElement {
     if (this._refElements.value) {
       this._refElements.value.hass = hass;
     }
-    if (this._refViews.value) {
+    // HA sends a new hass for any state change in the house; re-rendering the
+    // views for one that touches none of their entities stalls slow devices.
+    if (this._refViews.value && this._viewsNeedHASS(hass, oldHass)) {
       this._refViews.value.hass = hass;
     }
+  }
+
+  private _viewsNeedHASS(hass: HomeAssistant, oldHass: HomeAssistant | null): boolean {
+    if (!oldHass) {
+      return true;
+    }
+    const keys = Object.keys(hass) as (keyof HomeAssistant)[];
+    if (keys.some((key) => key !== 'states' && hass[key] !== oldHass[key])) {
+      return true;
+    }
+    const entities = [
+      ...(this._config?.cameras ?? []).map((camera) => camera.camera_entity),
+      this._config?.image?.entity,
+    ].filter(isTruthy);
+    return isHassDifferent(hass, oldHass, entities);
   }
 
   set isPanel(isPanel: boolean) {
